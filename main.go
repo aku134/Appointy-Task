@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 	"encoding/json"
+	"golang.org/x/crypto/bcrypt"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -77,12 +78,19 @@ func createuser(w http.ResponseWriter, r *http.Request) {
         user_id++ // user_id is globally initialized to 0.
 		          //Everytime this function is invoked user_id value is incremented.
 		
-		//This takes input from userform(HTML) and parses the values and stores in the database.	
+		//This takes input from userform(HTML) and parses the values and stores in the database.
+		
+		hash, err := bcrypt.GenerateFromPassword([]byte(r.FormValue("Password")), bcrypt.DefaultCost)
+		if err != nil {
+			
+			log.Fatal(err)
+		}
+		fmt.Println("Hash to store:", string(hash))
 		    val := User{
 			Userid: user_id, 
 			Name: r.FormValue("name"), 
 			Email: r.FormValue("Email"),
-			Password: r.FormValue("Password"),
+			Password: string(hash),
 			}
 		
 		insertResult, err := insert(client, ctx, "instadata", "users", val)
@@ -248,6 +256,6 @@ func main() {
 	http.HandleFunc("/post", showpost)
 	http.HandleFunc("/posts/users",listposts)
 
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":8000", nil))
 
 }
