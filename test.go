@@ -15,9 +15,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	
 )
-
-var user_count = 0
-var post_count = 1001
+//Global variables
+var user_id = 0
+var post_id = 1001
+var option interface{}
+var dataBase = "instadata"   //database name
+var col = "posts"           //collection name
 
 type User struct {
 	Userid   int    ` json:"id"`
@@ -33,18 +36,20 @@ type Posts struct {
 	Timestamp time.Time
 }
 
+//This function closes the MongoDB connection and cancels contexts and resources
 func close(client *mongo.Client, ctx context.Context,
 	cancel context.CancelFunc) {
 
-	defer cancel()
+	defer cancel() //This cancels context
 
-	defer func() {
+	defer func() {  //This closes the connection with MongoDB
 		if err := client.Disconnect(ctx); err != nil {
 			panic(err)
 		}
 	}()
 }
 
+//This function establishes connection with MongoDB 
 func connect(uri string) (*mongo.Client, context.Context, context.CancelFunc, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(),
@@ -53,6 +58,8 @@ func connect(uri string) (*mongo.Client, context.Context, context.CancelFunc, er
 	return client, ctx, cancel, err
 }
 
+
+//This function takes input from userform and parses the values and stores in the database.
 func createuser(w http.ResponseWriter, r *http.Request) {
 	
 	client, ctx, cancel, err := connect("mongodb://localhost:27017")
@@ -67,20 +74,31 @@ func createuser(w http.ResponseWriter, r *http.Request) {
 		t.Execute(w, nil)
 	} else {
 		r.ParseForm()
-        user_count++
-		val := User{Userid: user_count, Name: r.FormValue("name"), Email: r.FormValue("Email"), Password: r.FormValue("Password")}
-		insertResult, err := insert(client, ctx, "test1", "users", val)
+        user_id++ // user_id is globally initialized to 0.
+		          //Everytime this function is invoked user_id value is incremented.
+		
+		//This takes input from userform(HTML) and parses the values and stores in the database.	
+		    val := User{
+			Userid: user_id, 
+			Name: r.FormValue("name"), 
+			Email: r.FormValue("Email"),
+			Password: r.FormValue("Password"),
+			}
+		
+		insertResult, err := insert(client, ctx, "instadata", "users", val)
 
 		// handle the error
 		if err != nil {
 			panic(err)
 		}
 		fmt.Println(insertResult)
-		fmt.Println(user_count)
+		fmt.Println(user_id)
 		
 	}
 }
 
+
+//showuser function
 func showuser(w http.ResponseWriter, r *http.Request) {
 	client, ctx, cancel, err := connect("mongodb://localhost:27017")
 	if err != nil {
@@ -89,29 +107,30 @@ func showuser(w http.ResponseWriter, r *http.Request) {
 
 	defer close(client, ctx, cancel)
 
-	id, err := strconv.Atoi(r.URL.Query().Get("id"))
+	id, err := strconv.Atoi(r.URL.Query().Get("id")) //This command taked id param from url and stores in variable id
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
 	fmt.Print(id)
-	var option interface{}
-	var dataBase = "test1"
-	var col = "users"
+	
 	collection := client.Database(dataBase).Collection(col)
-	option = bson.D{{"_id", 0}}
-	filterCursor, err := collection.Find(ctx, bson.M{"userid": id}, options.Find().SetProjection(option))
+	option = bson.D{{"_id", 0}}  //  option remove objectid field from all documents
+	filter, err := collection.Find(ctx, bson.M{"userid": id}, options.Find().SetProjection(option))
 	if err != nil {
 		log.Fatal(err)
 	}
 	var results []bson.M
-	if err = filterCursor.All(ctx, &results); err != nil {
+	if err = filter.All(ctx, &results); err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println(results)
 	
 
 }
+
+
+//CreatePost function
 
 func createpost(w http.ResponseWriter, r *http.Request) {
 	client, ctx, cancel, err := connect("mongodb://localhost:27017")
@@ -126,19 +145,28 @@ func createpost(w http.ResponseWriter, r *http.Request) {
 		t.Execute(w, nil)
 	} else {
 		r.ParseForm()
-
-		val := Posts{Userid:user_count-1, Postid: post_count, Caption: r.FormValue("caption"), imgurl: r.FormValue("img"), Timestamp: time.Now()}
-		insertResult, err := insert(client, ctx, "test1", "posts", val)
+//This takes input from postform(HTML) and parses the values and stores in the database.
+		val := Posts{
+			Userid:user_id, 
+			Postid: post_id, 
+			Caption: r.FormValue("caption"), 
+			imgurl: r.FormValue("img"), 
+			Timestamp: time.Now()}
+		
+		insertResult, err := insert(client, ctx, "instadata", "posts", val)//insert operation 
 
 		// handle the error
 		if err != nil {
 			panic(err)
 		}
 		fmt.Println(insertResult)
-		post_count++
+		post_id++ // user_id is globally initialized to 0.
+		          //Everytime this function is invoked user_id value is incremented.
 	}
 }
 
+
+//Showpost function
 func showpost(w http.ResponseWriter, r *http.Request) {
 	client, ctx, cancel, err := connect("mongodb://localhost:27017")
 	if err != nil {
@@ -147,23 +175,21 @@ func showpost(w http.ResponseWriter, r *http.Request) {
 
 	defer close(client, ctx, cancel)
 
-	id, err := strconv.Atoi(r.URL.Query().Get("id"))
+	id, err := strconv.Atoi(r.URL.Query().Get("id"))//This command taked id param from url and stores in variable id
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
 	fmt.Print(id)
-	var option interface{}
-	var dataBase = "test1"
-	var col = "posts"
+	
 	collection := client.Database(dataBase).Collection(col)
-	option = bson.D{{"_id", 0}}
-	filterCursor, err := collection.Find(ctx, bson.M{"postid": id}, options.Find().SetProjection(option))
+	option = bson.D{{"_id", 0}} //  option remove objectid field from all documents
+	filter, err := collection.Find(ctx, bson.M{"postid": id}, options.Find().SetProjection(option))
 	if err != nil {
 		log.Fatal(err)
 	}
 	var results []bson.M
-	if err = filterCursor.All(ctx, &results); err != nil {
+	if err = filter.All(ctx, &results); err != nil {
 		log.Fatal(err)
 	}
 	b,err:=json.Marshal(results)
@@ -171,6 +197,7 @@ func showpost(w http.ResponseWriter, r *http.Request) {
 
 }
 
+//listposts function
 func listposts(w http.ResponseWriter, r *http.Request) {
 	client, ctx, cancel, err := connect("mongodb://localhost:27017")
 	if err != nil {
@@ -179,23 +206,22 @@ func listposts(w http.ResponseWriter, r *http.Request) {
 
 	defer close(client, ctx, cancel)
 
-	id, err := strconv.Atoi(r.URL.Query().Get("id"))
+	id, err := strconv.Atoi(r.URL.Query().Get("id"))//This command taked id param from url and stores in variable id
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
 	fmt.Print(id)
-	var option interface{}
-	var dataBase = "test1"
-	var col = "posts"
+	
 	collection := client.Database(dataBase).Collection(col)
-	option = bson.D{{"_id", 0}}
-	filterCursor, err := collection.Find(ctx, bson.M{"userid": id}, options.Find().SetProjection(option))
+	option = bson.D{{"_id", 0}}//  option remove objectid field from all documents
+	filter, err := collection.Find(ctx, bson.M{"userid": id}, options.Find().SetProjection(option))//Compares userid with id in the url 
+	                                                                                               //and finds the posts of the particular user with that id
 	if err != nil {
 		log.Fatal(err)
 	}
 	var results []bson.M
-	if err = filterCursor.All(ctx, &results); err != nil {
+	if err = filter.All(ctx, &results); err != nil {
 		log.Fatal(err)
 	}
 	b,err:=json.Marshal(results)
@@ -203,6 +229,7 @@ func listposts(w http.ResponseWriter, r *http.Request) {
 
 }
 
+//performs insert operation
 func insert(client *mongo.Client, ctx context.Context, dataBase, col string, val interface{}) (*mongo.InsertOneResult, error) {
 
 	collection := client.Database(dataBase).Collection(col)
@@ -211,6 +238,8 @@ func insert(client *mongo.Client, ctx context.Context, dataBase, col string, val
 
 }
 
+
+//routing
 func main() {
 
 	http.HandleFunc("/users", createuser)
