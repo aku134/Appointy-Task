@@ -220,7 +220,7 @@ func listposts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Print(id)
-	
+	var col = "posts" 
 	collection := client.Database(dataBase).Collection(col)
 	option = bson.D{{"_id", 0}}//  option remove objectid field from all documents
 	filter, err := collection.Find(ctx, bson.M{"userid": id}, options.Find().SetProjection(option))//Compares userid with id in the url 
