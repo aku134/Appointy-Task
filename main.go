@@ -21,7 +21,7 @@ var user_id = 0
 var post_id = 1001
 var option interface{}
 var dataBase = "instadata"   //database name
-var col = "posts"           //collection name
+
 
 type User struct {
 	Userid   int    ` json:"id"`
@@ -121,7 +121,7 @@ func showuser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Print(id)
-	
+	var col = "users"           //collection name
 	collection := client.Database(dataBase).Collection(col)
 	option = bson.D{{"_id", 0}}  //  option remove objectid field from all documents
 	filter, err := collection.Find(ctx, bson.M{"userid": id}, options.Find().SetProjection(option))
@@ -189,7 +189,7 @@ func showpost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Print(id)
-	
+	var col = "posts"           //collection name
 	collection := client.Database(dataBase).Collection(col)
 	option = bson.D{{"_id", 0}} //  option remove objectid field from all documents
 	filter, err := collection.Find(ctx, bson.M{"postid": id}, options.Find().SetProjection(option))
