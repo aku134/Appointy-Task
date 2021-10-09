@@ -63,7 +63,7 @@ func createuser(w http.ResponseWriter, r *http.Request) {
 	defer close(client, ctx, cancel)
 	fmt.Println("method:", r.Method) //get request method
 	if r.Method == "GET" {
-		t, _ := template.ParseFiles("user.html")
+		t, _ := template.ParseFiles("./assets/user.html")
 		t.Execute(w, nil)
 	} else {
 		r.ParseForm()
@@ -122,7 +122,7 @@ func createpost(w http.ResponseWriter, r *http.Request) {
 	defer close(client, ctx, cancel)
 	fmt.Println("method:", r.Method) //get request method
 	if r.Method == "GET" {
-		t, _ := template.ParseFiles("post.html")
+		t, _ := template.ParseFiles("./assets/post.html")
 		t.Execute(w, nil)
 	} else {
 		r.ParseForm()
